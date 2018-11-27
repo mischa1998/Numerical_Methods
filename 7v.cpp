@@ -10,17 +10,17 @@ using namespace std;
 
 const double PI  =3.141592653589793238463;
 
-
+//начальное условие
 double u_x(double x)
 {
 	return sin(x);
 }
-
+//точное решение
 double accurate_solve(double x, double t)
 {
 	return exp(-0.5*t)*sin(x);	
 }
-//запихнуть в заголовочник
+//печать вектора
 void print_v(vector<double> &m)
 {
 	size_t n = m.size();
@@ -29,6 +29,7 @@ void print_v(vector<double> &m)
 	}
 	cout<<endl;
 }
+//печать матрицы
 void print_matr(vector<vector<double> > &m)
 {
 	size_t n = m[0].size();
@@ -40,31 +41,33 @@ void print_matr(vector<vector<double> > &m)
 	}
 	cout<<endl;
 }
+//запись столбца матрицы в файл
 void printmatrix(int n, vector<vector<double> > &m, ofstream &in, int ind)
 {
     for(int i = 0; i < n; i++) {
         in<<m[i][ind]<<endl;
     }
 }
+//запись вектора в файл
 void printv(int n, vector<double> &m, ofstream &in)
 {
     for(int i = 0; i < n; i++) {
         in<<m[i]<<endl;
     }
 }
-
+//функция источник
 double f(double x, double t)
 {
 	return 0.5 * exp(-0.5 * t) * cos(x);
 }
 
-int ind = 5;
-int n = 0;
-int T = 0;
-int appr = 0;
+int ind = 5;//момент времени, на котором сравниваются точное и численное решение
+int n = 0;//число разбиений по X
+int T = 0;//число разбиений по T
+int appr = 0;//вид аппроксимации граничных условий
 
 double calculate_error(vector<vector<double> > &m, vector<double> &x, vector<double> &t);
-
+//явная схема для решения параболического уравнения
 double yav()
 {
 	double h = PI / n;
@@ -94,15 +97,15 @@ double yav()
 		for(size_t i = 1; i < n; i++) {
 			u[i][j + 1] = u[i][j] + (tau / (h * h))*(u[i + 1][j] - 2.0*u[i][j] + u[i - 1][j]) + (tau * f(x[i], t[j]));
 		}
-		if (appr == 0) {
+		if (appr == 0) {//аппроксимация граничных условий с 1 порядком точности
 			u[0][j + 1] = u[1][j + 1] - h*exp(-0.5 * t[j + 1]);
 			u[n][j + 1] = u[n - 1][j + 1] - h*exp(-0.5 * t[j + 1]);
 		}
-		if (appr == 1) {
+		if (appr == 1) {//аппроксимация граничных условий со 2 порядком точности по 2 точкам
 			u[0][j + 1] = (4 / 3.) * u[1][j + 1] - (1 / 3.) * u[2][j + 1] - (2 / 3.)*h*exp(-0.5*t[j + 1]);
 			u[n][j + 1] = (2 / 3.)*h*(-exp(-0.5*t[j + 1])) - (1 / 3.)*u[n - 2][j + 1] + (4 / 3.)*u[n - 1][j + 1];
 		}
-		if (appr == 2) {
+		if (appr == 2) {//аппроксимация граничных условий со 2 порядком точности по 3 точкам
 			double betta = (1 / h) + (h / (2 * tau));
 			u[0][j + 1] = (1 / betta)*u[1][j + 1] + ((h*h) / (2*betta*tau))*u[0][j] + ((h*h) / (2*betta))*f(0, t[j + 1]) - (h / betta)*(exp(-0.5 * t[j + 1]));
 			u[n][j + 1] = (1 / betta)*u[n - 1][j + 1] + ((h*h)/(2*tau*betta))*u[n][j] + ((h*h)/(2*betta))*f(x[n], t[j + 1]) + (h/betta)*(- h*exp(-0.5 * t[j + 1]));
@@ -115,19 +118,21 @@ double yav()
 	time.close();
 	setting1();
 	ofstream in;
-    ofstream in1;
-    in.open("data/x7.txt");
-    in1.open("data/y7.txt");
-    printv(n + 1, x, in);
-    printmatrix(n + 1, u, in1, ind);
-    in.close();
-    in1.close();
-    double error = calculate_error(u, x, t);
-    cout<<"Error "<<error<<endl;
+        ofstream in1;
+        in.open("data/x7.txt");
+        in1.open("data/y7.txt");
+        printv(n + 1, x, in);
+        printmatrix(n + 1, u, in1, ind);
+        in.close();
+        in1.close();
+	//погрешность решения на заданном моменте времени(максимум отклонения от точного решения)
+        double error = calculate_error(u, x, t);
+        cout<<"Error "<<error<<endl;
 	return error;
 }
 
-
+//неявная схема для решения уравнения параболического типа
+//аппроксимация граничных условий как в и в случае явной схемы
 double neyav()
 {
 	double h = PI / n;
@@ -194,6 +199,8 @@ double neyav()
 			b[i] = -(u[i][j] + tau * f(x[i], t[j]));
 		}
 		print_v(b);
+		//система представляет собой 3-х диагональную матрицу
+		//решается методом прогонки (реализация "prog.h")
 		vector<double> solution = prog_solution(a, b);
 		for(size_t i = 0; i < n + 1; i++) {
 			u[i][j + 1] = solution[i];
@@ -210,23 +217,24 @@ double neyav()
 	time.close();
 	setting1();
 	ofstream in;
-    ofstream in1;
-    in.open("data/x17.txt");
-    in1.open("data/y17.txt");
-    if (!in.is_open()) {
-    	cout<<"Not open!!!!!!!"<<endl;
-    }
-    printv(n + 1, x, in);
-    printmatrix(n + 1, u, in1, ind);
-    in.close();
-    in1.close();
-    double error = calculate_error(u, x, t);
-    cout<<"Error "<<error<<endl;
+        ofstream in1;
+        in.open("data/x17.txt");
+        in1.open("data/y17.txt");
+        if (!in.is_open()) {
+    	    cout<<"Not open!!!!!!!"<<endl;
+        }
+        printv(n + 1, x, in);
+        printmatrix(n + 1, u, in1, ind);
+        in.close();
+        in1.close();
+        double error = calculate_error(u, x, t);
+        cout<<"Error "<<error<<endl;
 	return error;
 
 }
 
-
+//комбинированная(схема с весами, кранко-николсона) для решения уравнения параболического типа
+//аппроксимация граничных условий аналогична аппроксимации в явной схеме
 double krank_nikolson()
 {
 	double h = PI / n;
@@ -293,6 +301,7 @@ double krank_nikolson()
 		for(size_t i = 1; i < n; i++) {
 			b[i] = r*u[i + 1][j] + (1 - 2*r)*u[i][j] +r*u[i - 1][j] + tau * f(x[i], t[j] + (tau * 0.5)); 
 		}
+		//система решается методом прогонки
 		vector<double> solution = prog_solution(a, b);
 		for(size_t i = 0; i < n + 1; i++) {
 			u[i][j + 1] = solution[i];
@@ -309,34 +318,21 @@ double krank_nikolson()
 	time.close();
 	setting1();
 	ofstream in;
-    ofstream in1;
-    in.open("data/x27.txt");
-    in1.open("data/y27.txt");
-    if (!in.is_open()) {
-    	cout<<"Not open!!!!!!!"<<endl;
-    }
-    printv(n + 1, x, in);
-    printmatrix(n + 1, u, in1, ind);
-    in.close();
-    in1.close();
-    double error = calculate_error(u, x, t);
-    cout<<"Error "<<error<<endl;
+        ofstream in1;
+        in.open("data/x27.txt");
+        in1.open("data/y27.txt");
+        if (!in.is_open()) {
+    	    cout<<"Not open!!!!!!!"<<endl;
+        }
+        printv(n + 1, x, in);
+        printmatrix(n + 1, u, in1, ind);
+        in.close();
+        in1.close();
+        double error = calculate_error(u, x, t);
+        cout<<"Error "<<error<<endl;
 	return error;
 }
-/*
-double calculate_error(vector<vector<double> > &m, vector<double> &x, vector<double> &t)
-{
-	vector<double> res(n + 1);
-	for(size_t i = 0; i < n + 1; i++) {
-		res[i] = accurate_solve(x[i], t[ind]) - m[i][ind];
-	}
-	double result = 0;
-	for(size_t i = 0; i < n; i++) {
-		result += res[i]*res[i];
-	}
-	return sqrt(result);
-}
-*/
+
 double calculate_error(vector<vector<double> > &m, vector<double> &x, vector<double> &t)
 {
 	vector<double> res(n + 1);
@@ -368,13 +364,13 @@ int main(int argc, char **argv)
 	}
 	Py_Initialize();
 	PySys_SetArgv(argc, changed_argv);
-    PyRun_SimpleFile(fopen(script_path, "r"), script_path);
-    for(int i = 0; i < argc; i++) {
-    	free(changed_argv[i]);
-    }
-    free(changed_argv);
-    ifstream data;
-    data.open("data/pp.txt");
+        PyRun_SimpleFile(fopen(script_path, "r"), script_path);
+        for(int i = 0; i < argc; i++) {
+    	    free(changed_argv[i]);
+        }
+        free(changed_argv);
+        ifstream data;
+        data.open("data/pp.txt");
 	int i = 0;
 	data>>n;
 	data>>T;
@@ -398,26 +394,7 @@ int main(int argc, char **argv)
 		krank_nikolson();
 		script_path = "472.py";
 	}
-	cout<<script_path<<endl;
-    PyRun_SimpleFile(fopen(script_path, "r"), script_path);
-    Py_Finalize();
-    n = 30;
-    T = 30;
-    ind = 6;
-    appr = 0;
-    double error11 = yav();
-    double error12 = neyav();
-    double error13 = krank_nikolson();
-    appr = 1;
-    double error21 = yav();
-    double error22 = neyav();
-    double error23 = krank_nikolson();
-    appr = 2;
-    double error31 = yav();
-    double error32 = neyav();
-    double error33 = krank_nikolson();
-    cout<<error11<<" "<<error21<<" "<<error31<<endl;
-    cout<<error12<<" "<<error22<<" "<<error32<<endl;
-    cout<<error13<<" "<<error23<<" "<<error33<<endl;
+        PyRun_SimpleFile(fopen(script_path, "r"), script_path);
+        Py_Finalize();
    	return 0;
 }
