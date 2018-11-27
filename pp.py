@@ -28,7 +28,7 @@ def solve(var):
 
 
 root = Tk()
-root.title("Численные методы ЛР2")
+root.title("Численные методы ЛР1")
 img = Image.open("data/LW1.jpg")
 render = ImageTk.PhotoImage(img)
 initil = Label(root, image=render)
